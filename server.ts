@@ -4,23 +4,26 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { MongoClient, type Collection } from 'mongodb';
+
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'nobsa-transporte-escolar-2027-super-secret-key-boyaca';
+const JWT_SECRET = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = process.env.MONGODB_DB || 'feria_robotica_nobsa';
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Ensure data folder exists
 const DATA_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
 const DB_FILE = path.join(DATA_DIR, 'database.json');
+const MONGO_STATE_ID = 'application-state';
+let mongoClientPromise: Promise<MongoClient> | undefined;
 
 // Initial 44 Bus Stops strictly from Excel
 const INITIAL_BUS_STOPS = [
@@ -322,9 +325,16 @@ function getInitialData() {
     institutions: INITIAL_INSTITUTIONS,
     grades: INITIAL_GRADES,
     users: initialUsers,
-    inscriptions: sampleInscriptions,
+    inscriptions: [],
     auditLogs: initialAuditLogs
   };
+}
+
+let defaultDatabase: DbSchema | undefined;
+
+function getDefaultDatabase(): DbSchema {
+  defaultDatabase ??= getInitialData();
+  return defaultDatabase;
 }
 
 // Database helper functions
@@ -338,27 +348,111 @@ interface DbSchema {
   auditLogs: any[];
 }
 
-function loadDatabase(): DbSchema {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      const initial = getInitialData();
-      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), 'utf-8');
-      return initial;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Error loading database, returning default fallback', err);
-    return getInitialData();
+type StoredDbSchema = DbSchema & { _id: string };
+
+function getMongoCollection(): Promise<Collection<StoredDbSchema>> {
+  if (!MONGODB_URI) {
+    throw new Error('Falta configurar MONGODB_URI para conectar la base de datos.');
   }
+
+  mongoClientPromise ??= new MongoClient(MONGODB_URI).connect();
+  return mongoClientPromise.then((client) =>
+    client.db(MONGODB_DB).collection<StoredDbSchema>('applicationState')
+  );
 }
 
-function saveDatabase(db: DbSchema) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving database', err);
+function normalizeDatabase(parsed: unknown): DbSchema {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('La base de datos no contiene un objeto JSON válido.');
   }
+
+  const data = parsed as Partial<DbSchema>;
+  const defaults = getDefaultDatabase();
+  return {
+    nextSequentialId: Number.isInteger(data.nextSequentialId) ? data.nextSequentialId! : defaults.nextSequentialId,
+    busStops: Array.isArray(data.busStops) ? data.busStops : structuredClone(defaults.busStops),
+    institutions: Array.isArray(data.institutions) ? data.institutions : structuredClone(defaults.institutions),
+    grades: Array.isArray(data.grades) ? data.grades : [...defaults.grades],
+    users: Array.isArray(data.users) ? data.users : structuredClone(defaults.users),
+    inscriptions: Array.isArray(data.inscriptions) ? data.inscriptions : [],
+    auditLogs: Array.isArray(data.auditLogs) ? data.auditLogs : structuredClone(defaults.auditLogs)
+  };
+}
+
+function readLegacyDatabase(): DbSchema | undefined {
+  if (!fs.existsSync(DB_FILE)) return undefined;
+  return normalizeDatabase(JSON.parse(fs.readFileSync(DB_FILE, 'utf-8')));
+}
+
+async function loadDatabase(): Promise<DbSchema> {
+  if (MONGODB_URI) {
+    const collection = await getMongoCollection();
+    const stored = await collection.findOne({ _id: MONGO_STATE_ID });
+    if (stored) {
+      const { _id: _storedId, ...db } = stored;
+      return readDatabaseState(db);
+    }
+
+    const initial = readLegacyDatabase() ?? getInitialData();
+    try {
+      await collection.insertOne({ ...initial, _id: MONGO_STATE_ID });
+      return initial;
+    } catch (error) {
+      if ((error as { code?: number }).code !== 11000) throw error;
+      const concurrentSeed = await collection.findOne({ _id: MONGO_STATE_ID });
+      if (!concurrentSeed) throw error;
+      const { _id: _storedId, ...db } = concurrentSeed;
+      return readDatabaseState(db);
+    }
+  }
+
+  if (process.env.VERCEL) {
+    throw new Error('Falta configurar MONGODB_URI en las variables de entorno de Vercel.');
+  }
+
+  const legacy = readLegacyDatabase();
+  if (legacy) return legacy;
+
+  const initial = getInitialData();
+  await saveDatabase(initial);
+  return initial;
+}
+
+function readDatabaseState(value: unknown): DbSchema {
+  return normalizeDatabase(value);
+}
+
+async function saveDatabase(db: DbSchema): Promise<void> {
+  if (MONGODB_URI) {
+    const collection = await getMongoCollection();
+    await collection.replaceOne(
+      { _id: MONGO_STATE_ID },
+      { ...db },
+      { upsert: true }
+    );
+    return;
+  }
+
+  if (process.env.VERCEL) {
+    throw new Error('Falta configurar MONGODB_URI en las variables de entorno de Vercel.');
+  }
+
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
+}
+
+function getRequestDatabase(req: Request): DbSchema {
+  const db = (req as DbRequest).db;
+  if (!db) throw new Error('No se cargó la base de datos para esta solicitud.');
+  return db;
+}
+
+function asyncHandler(
+  handler: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(handler(req, res, next)).catch(next);
+  };
 }
 
 function logAudit(db: DbSchema, user: { name: string; id: string }, action: string, recordType: string, recordId: string, details: string) {
@@ -377,12 +471,29 @@ function logAudit(db: DbSchema, user: { name: string; id: string }, action: stri
 
 // Auth Middleware
 interface AuthRequest extends Request {
+  db?: DbSchema;
   user?: {
     id: string;
     username: string;
     name: string;
     role: 'ADMIN' | 'FUNCIONARIO';
   };
+}
+
+interface DbRequest extends Request {
+  db?: DbSchema;
+}
+
+app.use('/api', asyncHandler(async (req, _res, next) => {
+  (req as DbRequest).db = await loadDatabase();
+  next();
+}));
+
+function getJwtSecret(): string {
+  if (!JWT_SECRET) {
+    throw new Error('Falta configurar AUTH_SECRET (o JWT_SECRET) en las variables de entorno.');
+  }
+  return JWT_SECRET;
 }
 
 function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
@@ -393,7 +504,7 @@ function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) 
     return res.status(401).json({ error: 'Acceso no autorizado. Debe iniciar sesión.' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+  jwt.verify(token, getJwtSecret(), (err: any, decoded: any) => {
     if (err) {
       return res.status(403).json({ error: 'Sesión expirada o token inválido.' });
     }
@@ -406,7 +517,7 @@ function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) 
 
 // 1. Public Configuration Route
 app.get('/api/public/config', (req: Request, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   res.json({
     vigencia: 2027,
     municipio: 'Nobsa',
@@ -419,8 +530,8 @@ app.get('/api/public/config', (req: Request, res: Response) => {
 });
 
 // 2. Public Inscription Submission Route
-app.post('/api/inscriptions', (req: Request, res: Response) => {
-  const db = loadDatabase();
+app.post('/api/inscriptions', asyncHandler(async (req, res) => {
+  const db = getRequestDatabase(req);
   const { status, student, guardian, authorization, declinationDetails } = req.body;
 
   if (!status || (status !== 'CONTINUA' && status !== 'NO_CONTINUA')) {
@@ -446,7 +557,7 @@ app.post('/api/inscriptions', (req: Request, res: Response) => {
 
     db.inscriptions.unshift(record);
     logAudit(db, { name: 'Portal Ciudadano', id: 'portal-publico' }, 'REGISTRO_NO_CONTINUIDAD', 'INSCRIPCION', code, `Registro de no continuidad para el servicio 2027 (${record.declinationDetails.studentFullName}).`);
-    saveDatabase(db);
+    await saveDatabase(db);
 
     return res.status(201).json({
       success: true,
@@ -625,23 +736,23 @@ app.post('/api/inscriptions', (req: Request, res: Response) => {
     inscriptionCode, 
     `Inscripción registrada para el estudiante ${studentName} (${studentDocNum}) en paradero ${selectedStop.name}.`
   );
-  saveDatabase(db);
+  await saveDatabase(db);
 
   return res.status(201).json({
     success: true,
     message: 'Inscripción registrada exitosamente',
     inscription: newInscription
   });
-});
+}));
 
 // 3. Admin Authentication Route
-app.post('/api/admin/login', (req: Request, res: Response) => {
+app.post('/api/admin/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuario y contraseña requeridos.' });
   }
 
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const user = db.users.find((u: any) => u.username.toLowerCase() === username.trim().toLowerCase() && u.active);
 
   if (!user) {
@@ -660,16 +771,16 @@ app.post('/api/admin/login', (req: Request, res: Response) => {
     role: user.role
   };
 
-  const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign(tokenPayload, getJwtSecret(), { expiresIn: '8h' });
 
   logAudit(db, user, 'INICIO_SESION', 'USUARIO', user.id, `Inicio de sesión exitoso del usuario ${user.username} (${user.role}).`);
-  saveDatabase(db);
+  await saveDatabase(db);
 
   res.json({
     token,
     user: tokenPayload
   });
-});
+}));
 
 // 4. Admin Current Profile Route
 app.get('/api/admin/me', authenticateToken, (req: AuthRequest, res: Response) => {
@@ -678,7 +789,7 @@ app.get('/api/admin/me', authenticateToken, (req: AuthRequest, res: Response) =>
 
 // 5. Admin Dashboard Statistics Route
 app.get('/api/admin/dashboard', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const total = db.inscriptions.length;
   const continuing = db.inscriptions.filter((i: any) => i.status === 'CONTINUA');
   const notContinuing = db.inscriptions.filter((i: any) => i.status === 'NO_CONTINUA');
@@ -731,7 +842,7 @@ app.get('/api/admin/dashboard', authenticateToken, (req: AuthRequest, res: Respo
 
 // 6. Admin Inscriptions Management Route
 app.get('/api/admin/inscriptions', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const { search, institution, grade, busStopId, status } = req.query;
 
   let results = [...db.inscriptions];
@@ -780,7 +891,7 @@ app.get('/api/admin/inscriptions', authenticateToken, (req: AuthRequest, res: Re
 
 // 7. Get Single Inscription with Details
 app.get('/api/admin/inscriptions/:id', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const found = db.inscriptions.find((i: any) => i.id === req.params.id);
   if (!found) {
     return res.status(404).json({ error: 'Inscripción no encontrada.' });
@@ -796,8 +907,8 @@ app.get('/api/admin/inscriptions/:id', authenticateToken, (req: AuthRequest, res
 });
 
 // 8. Update Inscription (Authorized Admin/Funcionario)
-app.put('/api/admin/inscriptions/:id', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+app.put('/api/admin/inscriptions/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const db = getRequestDatabase(req);
   const index = db.inscriptions.findIndex((i: any) => i.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ error: 'Inscripción no encontrada.' });
@@ -852,24 +963,24 @@ app.put('/api/admin/inscriptions/:id', authenticateToken, (req: AuthRequest, res
 
   logAudit(
     db, 
-    req.user!, 
+    (req as AuthRequest).user!, 
     'EDICION_INSCRIPCION', 
     'INSCRIPCION', 
     existing.id, 
     `Modificación de registro ${existing.id}. Paradero: ${beforeParadero} -> ${existing.student?.busStopName}. Grado: ${beforeGrade} -> ${existing.student?.grade}. Institución: ${beforeInst} -> ${existing.student?.institution}.`
   );
-  saveDatabase(db);
+  await saveDatabase(db);
 
   res.json({
     success: true,
     message: 'Inscripción actualizada correctamente.',
     inscription: existing
   });
-});
+}));
 
 // 9. Bus Stops Management Routes
 app.get('/api/admin/bus-stops', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   // Count students per stop
   const counts: Record<string, number> = {};
   db.inscriptions.forEach((i: any) => {
@@ -886,13 +997,13 @@ app.get('/api/admin/bus-stops', authenticateToken, (req: AuthRequest, res: Respo
   res.json({ busStops: stops });
 });
 
-app.post('/api/admin/bus-stops', authenticateToken, (req: AuthRequest, res: Response) => {
+app.post('/api/admin/bus-stops', authenticateToken, asyncHandler(async (req, res) => {
   const { name, operationalNote } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'El nombre del paradero es obligatorio.' });
   }
 
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const nextOrder = db.busStops.length + 1;
   const newStop = {
     id: `stop-${Date.now()}`,
@@ -903,14 +1014,14 @@ app.post('/api/admin/bus-stops', authenticateToken, (req: AuthRequest, res: Resp
   };
 
   db.busStops.push(newStop);
-  logAudit(db, req.user!, 'CREAR_PARADERO', 'PARADERO', newStop.id, `Nuevo paradero creado: ${newStop.name}.`);
-  saveDatabase(db);
+  logAudit(db, (req as AuthRequest).user!, 'CREAR_PARADERO', 'PARADERO', newStop.id, `Nuevo paradero creado: ${newStop.name}.`);
+  await saveDatabase(db);
 
   res.status(201).json({ success: true, busStop: newStop });
-});
+}));
 
-app.put('/api/admin/bus-stops/:id', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+app.put('/api/admin/bus-stops/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const db = getRequestDatabase(req);
   const index = db.busStops.findIndex((b: any) => b.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ error: 'Paradero no encontrado.' });
@@ -926,24 +1037,24 @@ app.put('/api/admin/bus-stops/:id', authenticateToken, (req: AuthRequest, res: R
   if (orderNumber !== undefined) stop.orderNumber = orderNumber;
 
   db.busStops[index] = stop;
-  logAudit(db, req.user!, 'ACTUALIZAR_PARADERO', 'PARADERO', stop.id, `Paradero actualizado: ${oldName} -> ${stop.name}. Estado: ${stop.active ? 'Activo' : 'Inactivo'}.`);
-  saveDatabase(db);
+  logAudit(db, (req as AuthRequest).user!, 'ACTUALIZAR_PARADERO', 'PARADERO', stop.id, `Paradero actualizado: ${oldName} -> ${stop.name}. Estado: ${stop.active ? 'Activo' : 'Inactivo'}.`);
+  await saveDatabase(db);
 
   res.json({ success: true, busStop: stop });
-});
+}));
 
 // 10. Institutions Management Routes
 app.get('/api/admin/institutions', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   res.json({ institutions: db.institutions });
 });
 
-app.post('/api/admin/institutions', authenticateToken, (req: AuthRequest, res: Response) => {
+app.post('/api/admin/institutions', authenticateToken, asyncHandler(async (req, res) => {
   const { name, sede } = req.body;
   if (!name || !sede) {
     return res.status(400).json({ error: 'Nombre y sede son obligatorios.' });
   }
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   const newInst = {
     id: `inst-${Date.now()}`,
     name: name.trim(),
@@ -952,13 +1063,13 @@ app.post('/api/admin/institutions', authenticateToken, (req: AuthRequest, res: R
     active: true
   };
   db.institutions.push(newInst);
-  logAudit(db, req.user!, 'CREAR_INSTITUCION', 'INSTITUCION', newInst.id, `Nueva sede creada: ${newInst.fullName}.`);
-  saveDatabase(db);
+  logAudit(db, (req as AuthRequest).user!, 'CREAR_INSTITUCION', 'INSTITUCION', newInst.id, `Nueva sede creada: ${newInst.fullName}.`);
+  await saveDatabase(db);
   res.status(201).json({ success: true, institution: newInst });
-});
+}));
 
-app.put('/api/admin/institutions/:id', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+app.put('/api/admin/institutions/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const db = getRequestDatabase(req);
   const index = db.institutions.findIndex((i: any) => i.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ error: 'Institución no encontrada.' });
@@ -971,22 +1082,29 @@ app.put('/api/admin/institutions/:id', authenticateToken, (req: AuthRequest, res
   if (active !== undefined) inst.active = !!active;
 
   db.institutions[index] = inst;
-  logAudit(db, req.user!, 'ACTUALIZAR_INSTITUCION', 'INSTITUCION', inst.id, `Institución actualizada: ${inst.fullName} (${inst.active ? 'Activa' : 'Inactiva'}).`);
-  saveDatabase(db);
+  logAudit(db, (req as AuthRequest).user!, 'ACTUALIZAR_INSTITUCION', 'INSTITUCION', inst.id, `Institución actualizada: ${inst.fullName} (${inst.active ? 'Activa' : 'Inactiva'}).`);
+  await saveDatabase(db);
   res.json({ success: true, institution: inst });
-});
+}));
 
 // 11. Audit Logs Route
 app.get('/api/admin/audit-logs', authenticateToken, (req: AuthRequest, res: Response) => {
-  const db = loadDatabase();
+  const db = getRequestDatabase(req);
   res.json({ logs: db.auditLogs.slice(0, 100) });
 });
 
-// Initialize database on startup
-loadDatabase();
+app.use('/api', (_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Ruta API no encontrada.' });
+});
+
+app.use('/api', (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('API request failed:', err);
+  res.status(500).json({ error: 'Error del servidor al consultar o guardar la información.' });
+});
 
 // Vite Middleware for Dev vs Production Static
 async function startServer() {
+  await loadDatabase();
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -1007,6 +1125,11 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Error starting server:', err);
-});
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    console.error('Error starting server:', err);
+    process.exitCode = 1;
+  });
+}
+
+export { app };

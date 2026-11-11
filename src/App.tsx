@@ -39,6 +39,7 @@ export default function App() {
   const [grades, setGrades] = useState<string[]>([]);
   const [authorizationText, setAuthorizationText] = useState<string>("");
   const [configLoading, setConfigLoading] = useState<boolean>(true);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   // App Navigation View: 'citizen' or 'admin'
   const [currentView, setCurrentView] = useState<"citizen" | "admin">(
@@ -70,25 +71,34 @@ export default function App() {
   const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
 
   // Fetch Public Configuration
-  const fetchConfig = async () => {
+  const fetchConfig = async (showLoading = false) => {
+    setConfigError(null);
+    if (showLoading) setConfigLoading(true);
     try {
       const res = await fetch("/api/public/config");
-      if (res.ok) {
-        const data = await res.json();
-        setBusStops(data.busStops || []);
-        setInstitutions(data.institutions || []);
-        setGrades(data.grades || []);
-        setAuthorizationText(data.authorizationText || "");
+      if (!res.headers.get("content-type")?.includes("application/json")) {
+        throw new Error("El servidor no respondió como API. Verifique la función /api y la conexión a MongoDB en Vercel.");
       }
-    } catch (e) {
-      console.error("Error fetching config:", e);
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No fue posible cargar colegios, grados y paraderos.");
+      }
+
+      setBusStops(data.busStops || []);
+      setInstitutions(data.institutions || []);
+      setGrades(data.grades || []);
+      setAuthorizationText(data.authorizationText || "");
+    } catch (error) {
+      console.error("Error fetching config:", error);
+      setConfigError(error instanceof Error ? error.message : "Error al cargar los datos del formulario.");
     } finally {
       setConfigLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConfig();
+    fetchConfig(true);
 
     // Check existing stored admin credentials
     const token = localStorage.getItem("nobsa_admin_token");
@@ -147,6 +157,16 @@ export default function App() {
             <p className="text-sm font-semibold text-slate-600">
               Cargando portal institucional de transporte escolar Nobsa 2027...
             </p>
+          </div>
+        ) : currentView === "citizen" && configError ? (
+          <div className="max-w-xl mx-auto rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+            <p className="text-sm font-semibold text-red-800">{configError}</p>
+            <button
+              onClick={() => fetchConfig(true)}
+              className="mt-4 rounded-xl bg-blue-800 px-4 py-2 text-sm font-bold text-white hover:bg-blue-900"
+            >
+              Volver a intentar
+            </button>
           </div>
         ) : currentView === "citizen" ? (
           /* ========================================================================= */

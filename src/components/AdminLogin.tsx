@@ -8,8 +8,8 @@ interface AdminLoginProps {
 }
 
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackToPublic }) => {
-  const [username, setUsername] = useState('admin_nobsa');
-  const [password, setPassword] = useState('Nobsa2027*');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +25,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
         body: JSON.stringify({ username, password }),
       });
 
+      if (!res.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('El servidor no respondió como API. Verifique la función /api y las variables de entorno de Vercel.');
+      }
+
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Credenciales inválidas');
@@ -38,11 +42,6 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
     } finally {
       setLoading(false);
     }
-  };
-
-  const setCredentials = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
   };
 
   return (
@@ -123,42 +122,6 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onBackTo
               Iniciar Sesión Segura
             </button>
           </form>
-
-          {/* Quick Demo Credentials Pill for authorized testing */}
-          <div className="mt-6 pt-5 border-t border-slate-200">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-              Credenciales de prueba preconfiguradas:
-            </span>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setCredentials('admin_nobsa', 'Nobsa2027*')}
-                className="text-left p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">1. Administrador TIC</span>
-                  <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">Rol ADMIN</span>
-                </div>
-                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                  admin_nobsa / Nobsa2027*
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCredentials('funcionario_nobsa', 'Funcionario2027*')}
-                className="text-left p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800">2. Funcionario Educación</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Rol FUNCIONARIO</span>
-                </div>
-                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                  funcionario_nobsa / Funcionario2027*
-                </div>
-              </button>
-            </div>
-          </div>
 
           <div className="mt-6 text-center">
             <button

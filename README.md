@@ -2,19 +2,23 @@
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>
 
-# Run and deploy your AI Studio app
+# Transporte Escolar Nobsa 2027
 
-This contains everything you need to run your app locally.
+Portal de inscripciones al servicio de transporte escolar del municipio de Nobsa.
 
-View your app in AI Studio: https://ai.studio/apps/15c09b26-1bff-4cbf-89e0-ac5c538ccdb1
+## Despliegue en Vercel
 
-## Run Locally
+1. Cree una base de datos en MongoDB Atlas y configure su usuario y acceso de red.
+2. En **Vercel > Project Settings > Environment Variables**, agregue:
+   - `MONGODB_URI`: cadena de conexión de Atlas.
+   - `MONGODB_DB`: nombre de la base de datos (por ejemplo, `feria_robotica_nobsa`).
+   - `AUTH_SECRET`: secreto aleatorio largo para firmar las sesiones.
+3. Vuelva a desplegar el proyecto. Las rutas `/api` se ejecutan como función de Vercel y los datos se guardan en MongoDB.
 
-**Prerequisites:**  Node.js
+En la primera conexión, el servidor migra `data/database.json` si está disponible; si no, inicializa los colegios, grados, paraderos y usuarios base.
 
+## Desarrollo local
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Ejecute `npm install`.
+2. Configure las variables anteriores en `.env` (puede tomar `.env.example` como referencia).
+3. Ejecute `npm run dev`.
