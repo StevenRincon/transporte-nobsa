@@ -1,0 +1,425 @@
+{
+  "nextSequentialId": 107,
+  "busStops": [
+    {
+      "id": "stop-1",
+      "orderNumber": 1,
+      "name": "3 Esquinas",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-2",
+      "orderNumber": 2,
+      "name": "La Chata",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-3",
+      "orderNumber": 3,
+      "name": "Esc. Dicho",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-4",
+      "orderNumber": 4,
+      "name": "Salitre",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-5",
+      "orderNumber": 5,
+      "name": "Campanario",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-6",
+      "orderNumber": 6,
+      "name": "Capilla Puntalarga",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-7",
+      "orderNumber": 7,
+      "name": "Tienda La Oficina",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-8",
+      "orderNumber": 8,
+      "name": "Acapulco",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-9",
+      "orderNumber": 9,
+      "name": "Suazapawa",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-10",
+      "orderNumber": 10,
+      "name": "Capilla de Ucuenga",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-11",
+      "orderNumber": 11,
+      "name": "Las Minas",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-12",
+      "orderNumber": 12,
+      "name": "Hornos de Cal",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-13",
+      "orderNumber": 13,
+      "name": "Capilla Caleras",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-14",
+      "orderNumber": 14,
+      "name": "Las Minas",
+      "operationalNote": "Paradero 14 (Ruta/Sector 2)",
+      "active": true
+    },
+    {
+      "id": "stop-15",
+      "orderNumber": 15,
+      "name": "Hornos de Cal",
+      "operationalNote": "Paradero 15 (Ruta/Sector 2)",
+      "active": true
+    },
+    {
+      "id": "stop-16",
+      "orderNumber": 16,
+      "name": "Capilla Caleras",
+      "operationalNote": "Paradero 16 (Ruta/Sector 2)",
+      "active": true
+    },
+    {
+      "id": "stop-17",
+      "orderNumber": 17,
+      "name": "La Playita",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-18",
+      "orderNumber": 18,
+      "name": "Transformador",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-19",
+      "orderNumber": 19,
+      "name": "Bomba Texaco",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-20",
+      "orderNumber": 20,
+      "name": "Areneras",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-21",
+      "orderNumber": 21,
+      "name": "Romboy",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-22",
+      "orderNumber": 22,
+      "name": "Asaderos",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-23",
+      "orderNumber": 23,
+      "name": "Flia Cely",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-24",
+      "orderNumber": 24,
+      "name": "Flia Martínez",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-25",
+      "orderNumber": 25,
+      "name": "La Torre",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-26",
+      "orderNumber": 26,
+      "name": "Canchas Cruz",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-27",
+      "orderNumber": 27,
+      "name": "El Bosque",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-28",
+      "orderNumber": 28,
+      "name": "Inspección de Policía",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-29",
+      "orderNumber": 29,
+      "name": "Sector Triángulo",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-30",
+      "orderNumber": 30,
+      "name": "Martha Mora",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-31",
+      "orderNumber": 31,
+      "name": "Sector Alto",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-32",
+      "orderNumber": 32,
+      "name": "JAC Chámeza Menor",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-33",
+      "orderNumber": 33,
+      "name": "Biosaludable",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-34",
+      "orderNumber": 34,
+      "name": "JAC Bonza",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-35",
+      "orderNumber": 35,
+      "name": "Holcim",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-36",
+      "orderNumber": 36,
+      "name": "Parque Central – Nobsa",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-37",
+      "orderNumber": 37,
+      "name": "Asonobsa",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-38",
+      "orderNumber": 38,
+      "name": "Holcim",
+      "operationalNote": "Paradero 38 (Ruta/Sector 2)",
+      "active": true
+    },
+    {
+      "id": "stop-39",
+      "orderNumber": 39,
+      "name": "Bonza",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-40",
+      "orderNumber": 40,
+      "name": "Parque Biosaludable",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-41",
+      "orderNumber": 41,
+      "name": "Martha Mora",
+      "operationalNote": "Paradero 41 (Ruta/Sector 2)",
+      "active": true
+    },
+    {
+      "id": "stop-42",
+      "orderNumber": 42,
+      "name": "Glorieta Gustavo Jiménez",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-43",
+      "orderNumber": 43,
+      "name": "Límite Argos-Nazareth",
+      "operationalNote": "",
+      "active": true
+    },
+    {
+      "id": "stop-44",
+      "orderNumber": 44,
+      "name": "El Triángulo",
+      "operationalNote": "",
+      "active": true
+    }
+  ],
+  "institutions": [
+    {
+      "id": "inst-1",
+      "name": "Técnico de Nazareth",
+      "sede": "Sede Central",
+      "fullName": "Técnico de Nazareth – Sede Central",
+      "active": true
+    },
+    {
+      "id": "inst-2",
+      "name": "Institución Educativa Técnica de Nobsa",
+      "sede": "Sede Central",
+      "fullName": "Institución Educativa Técnica de Nobsa – Sede Central",
+      "active": true
+    },
+    {
+      "id": "inst-3",
+      "name": "Institución Educativa Técnica de Nobsa",
+      "sede": "Sede Kennedy",
+      "fullName": "Institución Educativa Técnica de Nobsa – Sede Kennedy",
+      "active": true
+    },
+    {
+      "id": "inst-4",
+      "name": "Institución Educativa Técnica de Nobsa",
+      "sede": "Sede El Puente",
+      "fullName": "Institución Educativa Técnica de Nobsa – Sede El Puente",
+      "active": true
+    },
+    {
+      "id": "inst-5",
+      "name": "Institución Educativa Técnica de Nobsa",
+      "sede": "Sede San Martín",
+      "fullName": "Institución Educativa Técnica de Nobsa – Sede San Martín",
+      "active": true
+    },
+    {
+      "id": "inst-6",
+      "name": "Institución Educativa Técnica de Nobsa",
+      "sede": "Sede Dicho",
+      "fullName": "Institución Educativa Técnica de Nobsa – Sede Dicho",
+      "active": true
+    }
+  ],
+  "grades": [
+    "Transición (Preescolar)",
+    "Jardín (Preescolar)",
+    "Primero (1° Primaria)",
+    "Segundo (2° Primaria)",
+    "Tercero (3° Primaria)",
+    "Cuarto (4° Primaria)",
+    "Quinto (5° Primaria)",
+    "Sexto (6° Secundaria)",
+    "Séptimo (7° Secundaria)",
+    "Octavo (8° Secundaria)",
+    "Noveno (9° Secundaria)",
+    "Décimo (10° Media)",
+    "Once (11° Media)"
+  ],
+  "users": [
+    {
+      "id": "usr-1",
+      "name": "Ing. Hans Sebastian Barragan (Jefe Oficina de las TIC)",
+      "username": "admin_nobsa",
+      "passwordHash": "$2b$10$A.EvlEBWt9WX/J/APK5ZwedQWEgoVO4kam1L.e4oXMaLBatfbjVO2",
+      "role": "ADMIN",
+      "active": true,
+      "createdAt": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr-2",
+      "name": "Doc. Nubia Yolima Mesa (Sec. de la Mujer y Programas sociales)",
+      "username": "funcionario_nobsa",
+      "passwordHash": "$2b$10$cO7K180R/CwRDtXgLbmv7.ILqXU.gXVM9MARGKuKUUnsBoHfy9TAa",
+      "role": "FUNCIONARIO",
+      "active": true,
+      "createdAt": "2026-11-01T08:30:00.000Z"
+    }
+  ],
+
+  "auditLogs": [
+    {
+      "id": "log-1794405822234-343",
+      "userName": "Portal Ciudadano",
+      "userId": "portal-publico",
+      "action": "NUEVA_INSCRIPCION",
+      "recordType": "INSCRIPCION",
+      "recordId": "NOBSA-2027-TRP-00106",
+      "details": "Inscripción registrada para el estudiante Alejandra Gómez Rincón (1059998877) en paradero Capilla de Ucuenga.",
+      "timestamp": "2026-11-11T14:03:42.234Z"
+    },
+    {
+      "id": "log-1794405816626-528",
+      "userName": "Ing. Carlos Mendoza (Admin TIC)",
+      "userId": "usr-1",
+      "action": "INICIO_SESION",
+      "recordType": "USUARIO",
+      "recordId": "usr-1",
+      "details": "Inicio de sesión exitoso del usuario admin_nobsa (ADMIN).",
+      "timestamp": "2026-11-11T14:03:36.626Z"
+    },
+    {
+      "id": "log-1",
+      "userName": "Sistema Automático",
+      "userId": "system",
+      "action": "INICIALIZACION_SISTEMA",
+      "recordType": "SISTEMA",
+      "recordId": "init",
+      "details": "Inicialización de la plataforma de transporte escolar Nobsa 2027 con 44 paraderos y 6 sedes institucionales.",
+      "timestamp": "2026-11-01T08:00:00.000Z"
+    }
+  ]
+}

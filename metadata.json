@@ -1,0 +1,6 @@
+{
+  "name": "Transporte Escolar Nobsa 2027",
+  "description": "Plataforma oficial de inscripción y continuidad al servicio de transporte escolar - Vigencia 2027, Alcaldía Municipal de Nobsa, Boyacá.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
