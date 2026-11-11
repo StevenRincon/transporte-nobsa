@@ -75,9 +75,30 @@ export default function App() {
     setConfigError(null);
     if (showLoading) setConfigLoading(true);
     try {
+      try {
+        const healthResponse = await fetch("/api/health");
+        const healthIsJson = healthResponse.headers.get("content-type")?.includes("application/json");
+        const health = healthIsJson ? await healthResponse.json() : null;
+
+        if (healthResponse.ok && health?.database?.connected) {
+          console.info("[Nobsa] Conexión a la base de datos correcta.", health.database);
+        } else {
+          console.error("[Nobsa] No se pudo confirmar la conexión a la base de datos.", {
+            status: healthResponse.status,
+            statusText: healthResponse.statusText,
+            response: health,
+            hint: healthIsJson
+              ? "Revisa el error del servidor y las variables de MongoDB en Vercel."
+              : "La ruta /api/health no existe en el despliegue. Verifica que la función catch-all esté publicada."
+          });
+        }
+      } catch (healthError) {
+        console.error("[Nobsa] Falló la comprobación de conexión a la base de datos.", healthError);
+      }
+
       const res = await fetch("/api/public/config");
       if (!res.headers.get("content-type")?.includes("application/json")) {
-        throw new Error("El servidor no respondió como API. Verifique la función /api y la conexión a MongoDB en Vercel.");
+        throw new Error(`La API respondió HTTP ${res.status} sin JSON. Verifica que la función /api/[...path] esté desplegada.`);
       }
 
       const data = await res.json();

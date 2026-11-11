@@ -515,6 +515,20 @@ function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) 
 
 // ======================== API ROUTES ========================
 
+app.get('/api/health', (req: Request, res: Response) => {
+  const db = getRequestDatabase(req);
+  res.json({
+    ok: true,
+    database: {
+      connected: true,
+      provider: MONGODB_URI ? 'MongoDB' : 'JSON local',
+      institutions: db.institutions.length,
+      grades: db.grades.length,
+      busStops: db.busStops.length
+    }
+  });
+});
+
 // 1. Public Configuration Route
 app.get('/api/public/config', (req: Request, res: Response) => {
   const db = getRequestDatabase(req);
@@ -1099,6 +1113,18 @@ app.use('/api', (_req: Request, res: Response) => {
 
 app.use('/api', (err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('API request failed:', err);
+  if (_req.originalUrl.split('?')[0].endsWith('/api/health')) {
+    return res.status(503).json({
+      ok: false,
+      database: {
+        connected: false,
+        provider: MONGODB_URI ? 'MongoDB' : 'JSON local'
+      },
+      error: MONGODB_URI
+        ? 'No fue posible conectar con MongoDB. Revisa MONGODB_URI, MONGODB_DB y el acceso de red en Atlas.'
+        : 'MONGODB_URI no está configurada en el servidor.'
+    });
+  }
   res.status(500).json({ error: 'Error del servidor al consultar o guardar la información.' });
 });
 
