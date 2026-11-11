@@ -14,7 +14,7 @@ Portal de inscripciones al servicio de transporte escolar del municipio de Nobsa
    - `MONGODB_DB`: nombre de la base de datos (por ejemplo, `feria_robotica_nobsa`).
    - `AUTH_SECRET`: secreto aleatorio largo para firmar las sesiones.
 3. En **Settings > Build and Deployment**, use la raíz del proyecto y seleccione **Vite** como Framework Preset.
-4. Vuelva a desplegar. La función `api/[...path].ts` atiende `/api/*` y Vercel sirve el frontend desde `dist`.
+4. Vuelva a desplegar. La función `api/index.ts` atiende `/api/*` mediante una regla explícita de reescritura y Vercel sirve el frontend desde `dist`.
 
 La consola del navegador muestra si `/api/health` pudo leer MongoDB. Un `404` para esa ruta indica que la función no quedó incluida en el despliegue.
 

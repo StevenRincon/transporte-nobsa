@@ -77,8 +77,10 @@ export default function App() {
     try {
       try {
         const healthResponse = await fetch("/api/health");
-        const healthIsJson = healthResponse.headers.get("content-type")?.includes("application/json");
-        const health = healthIsJson ? await healthResponse.json() : null;
+        const healthContentType = healthResponse.headers.get("content-type") || "";
+        const healthText = await healthResponse.text();
+        const healthIsJson = healthContentType.includes("application/json");
+        const health = healthIsJson && healthText ? JSON.parse(healthText) : null;
 
         if (healthResponse.ok && health?.database?.connected) {
           console.info("[Nobsa] Conexión a la base de datos correcta.", health.database);
@@ -86,10 +88,12 @@ export default function App() {
           console.error("[Nobsa] No se pudo confirmar la conexión a la base de datos.", {
             status: healthResponse.status,
             statusText: healthResponse.statusText,
+            contentType: healthContentType,
             response: health,
+            responsePreview: healthIsJson ? undefined : healthText.slice(0, 300),
             hint: healthIsJson
               ? "Revisa el error del servidor y las variables de MongoDB en Vercel."
-              : "La ruta /api/health no existe en el despliegue. Verifica que la función catch-all esté publicada."
+              : "La respuesta no es JSON. Revisa la función API y la regla de reescritura en Vercel."
           });
         }
       } catch (healthError) {
@@ -97,8 +101,16 @@ export default function App() {
       }
 
       const res = await fetch("/api/public/config");
-      if (!res.headers.get("content-type")?.includes("application/json")) {
-        throw new Error(`La API respondió HTTP ${res.status} sin JSON. Verifica que la función /api/[...path] esté desplegada.`);
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const responsePreview = (await res.text()).slice(0, 300);
+        console.error("[Nobsa] Error cargando la configuración pública.", {
+          status: res.status,
+          statusText: res.statusText,
+          contentType,
+          responsePreview
+        });
+        throw new Error(`La API respondió HTTP ${res.status} sin JSON. Verifica la función API y las reglas de Vercel.`);
       }
 
       const data = await res.json();
