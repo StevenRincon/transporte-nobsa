@@ -1,15 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MongoClient, type Collection } from 'mongodb';
 
 import 'dotenv/config';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -20,7 +16,8 @@ const MONGODB_DB = process.env.MONGODB_DB || 'feria_robotica_nobsa';
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-const DATA_DIR = path.join(__dirname, 'data');
+const PROJECT_ROOT = process.cwd();
+const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 const MONGO_STATE_ID = 'application-state';
 let mongoClientPromise: Promise<MongoClient> | undefined;
@@ -1129,7 +1126,7 @@ app.use('/api', (err: Error, _req: Request, res: Response, _next: NextFunction) 
 });
 
 if (process.env.VERCEL) {
-  const distPath = path.join(__dirname, 'dist');
+  const distPath = path.join(PROJECT_ROOT, 'dist');
   app.use(express.static(distPath));
   app.get('*', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api/')) return next();
@@ -1148,7 +1145,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(__dirname, 'dist');
+    const distPath = path.join(PROJECT_ROOT, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req: Request, res: Response) => {
       res.sendFile(path.join(distPath, 'index.html'));
