@@ -1102,6 +1102,15 @@ app.use('/api', (err: Error, _req: Request, res: Response, _next: NextFunction) 
   res.status(500).json({ error: 'Error del servidor al consultar o guardar la información.' });
 });
 
+if (process.env.VERCEL) {
+  const distPath = path.join(__dirname, 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 // Vite Middleware for Dev vs Production Static
 async function startServer() {
   await loadDatabase();
@@ -1133,3 +1142,4 @@ if (!process.env.VERCEL) {
 }
 
 export { app };
+export default app;
