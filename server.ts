@@ -4,6 +4,11 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MongoClient, type Collection } from 'mongodb';
+import {
+  getTransportDestinations,
+  getTransportStopNames,
+  normalizeTransportName,
+} from './src/data/transportRoutes';
 
 import 'dotenv/config';
 
@@ -108,6 +113,7 @@ const INITIAL_INSTITUTIONS = [
 const INITIAL_GRADES = [
   'Transición (Preescolar)',
   'Jardín (Preescolar)',
+  'Prejardín (Preescolar)',
   'Primero (1° Primaria)',
   'Segundo (2° Primaria)',
   'Tercero (3° Primaria)',
@@ -369,7 +375,7 @@ function normalizeDatabase(parsed: unknown): DbSchema {
     nextSequentialId: Number.isInteger(data.nextSequentialId) ? data.nextSequentialId! : defaults.nextSequentialId,
     busStops: Array.isArray(data.busStops) ? data.busStops : structuredClone(defaults.busStops),
     institutions: Array.isArray(data.institutions) ? data.institutions : structuredClone(defaults.institutions),
-    grades: Array.isArray(data.grades) ? data.grades : [...defaults.grades],
+    grades: [...new Set([...defaults.grades, ...(Array.isArray(data.grades) ? data.grades : [])])],
     users: Array.isArray(data.users) ? data.users : structuredClone(defaults.users),
     inscriptions: Array.isArray(data.inscriptions) ? data.inscriptions : [],
     auditLogs: Array.isArray(data.auditLogs) ? data.auditLogs : structuredClone(defaults.auditLogs)
@@ -592,6 +598,7 @@ app.post('/api/inscriptions', asyncHandler(async (req, res) => {
   const studentDocNum = (student.documentNumber || '').trim();
   const institution = (student.institution || '').trim();
   const grade = (student.grade || '').trim();
+  const vereda = (student.vereda || '').trim();
   const busStopId = (student.busStopId || '').trim();
 
   if (!studentName) {
@@ -631,6 +638,27 @@ app.post('/api/inscriptions', asyncHandler(async (req, res) => {
   const selectedStop = db.busStops.find((b: any) => b.id === busStopId);
   if (!selectedStop) {
     return res.status(400).json({ error: 'El paradero seleccionado no es válido.' });
+  }
+  if (!vereda) {
+    return res.status(400).json({ error: 'Debe seleccionar la vereda del estudiante.' });
+  }
+  const routeStops = getTransportStopNames(vereda);
+  if (!routeStops.some((name) => normalizeTransportName(name) === normalizeTransportName(selectedStop.name))) {
+    return res.status(400).json({ error: 'El paradero seleccionado no corresponde a la vereda indicada.' });
+  }
+  const destinations = getTransportDestinations(vereda, grade);
+  const requestedDestination = (student.destination || '').trim();
+  const destination = destinations.length === 1
+    ? destinations[0]
+    : destinations.includes(requestedDestination)
+      ? requestedDestination
+      : undefined;
+  if (!destination) {
+    return res.status(400).json({
+      error: destinations.length > 1
+        ? 'Debe seleccionar un destino válido para la vereda y el grado.'
+        : 'No existe un destino registrado para la vereda y el grado seleccionados.',
+    });
   }
 
   // Guardian validation
@@ -709,6 +737,8 @@ app.post('/api/inscriptions', asyncHandler(async (req, res) => {
       documentNumber: studentDocNum,
       institution,
       grade,
+      vereda,
+      destination,
       hasSisben: !!student.hasSisben,
       sisbenLevel: student.hasSisben ? student.sisbenLevel?.trim() : undefined,
       sisbenMunicipality: student.hasSisben ? student.sisbenMunicipality?.trim() : undefined,
@@ -932,6 +962,37 @@ app.put('/api/admin/inscriptions/:id', authenticateToken, asyncHandler(async (re
   const beforeParadero = existing.student?.busStopName;
   const beforeGrade = existing.student?.grade;
   const beforeInst = existing.student?.institution;
+  const updatedStopId = student?.busStopId || existing.student?.busStopId;
+  const updatedStop = db.busStops.find((stop: any) => stop.id === updatedStopId);
+  const updatedGrade = student?.grade || existing.student?.grade;
+  const updatedVereda = student?.vereda || existing.student?.vereda;
+  const updatedDestinations = updatedVereda
+    ? getTransportDestinations(updatedVereda, updatedGrade || '')
+    : [];
+  const requestedDestination = (student?.destination || '').trim();
+  const updatedDestination = updatedDestinations.length === 1
+    ? updatedDestinations[0]
+    : updatedDestinations.includes(requestedDestination)
+      ? requestedDestination
+      : updatedDestinations.includes(existing.student?.destination || '')
+        ? existing.student?.destination
+        : undefined;
+
+  if (updatedVereda && !updatedDestination) {
+    return res.status(400).json({
+      error: updatedDestinations.length > 1
+        ? 'Seleccione un destino válido para la vereda y el grado.'
+        : 'No existe un destino registrado para la vereda y el grado seleccionados.',
+    });
+  }
+
+  if (updatedVereda && updatedStop && !getTransportStopNames(updatedVereda).some(
+    (name) => normalizeTransportName(name) === normalizeTransportName(updatedStop.name),
+  )) {
+    return res.status(400).json({
+      error: 'El paradero seleccionado no corresponde a la vereda indicada.',
+    });
+  }
 
   if (student) {
     existing.student = {
@@ -942,11 +1003,13 @@ app.put('/api/admin/inscriptions/:id', authenticateToken, asyncHandler(async (re
       documentNumber: student.documentNumber || existing.student?.documentNumber,
       institution: student.institution || existing.student?.institution,
       grade: student.grade || existing.student?.grade,
+      vereda: updatedVereda,
       hasSisben: student.hasSisben !== undefined ? student.hasSisben : existing.student?.hasSisben,
       sisbenLevel: student.sisbenLevel,
       sisbenMunicipality: student.sisbenMunicipality,
-      busStopId: student.busStopId || existing.student?.busStopId,
-      busStopName: student.busStopName || existing.student?.busStopName
+      busStopId: updatedStopId,
+      busStopName: updatedStop?.name || student.busStopName || existing.student?.busStopName,
+      destination: updatedDestination,
     };
   }
 

@@ -20,6 +20,13 @@ import {
 } from 'lucide-react';
 import { BusStop, EducationalInstitution, DocumentType, Inscription } from '../types';
 import { PrivacyModal } from './PrivacyModal';
+import {
+  getTransportDestinations,
+  getTransportStopNames,
+  getTransportVeredas,
+  gradeCodeFromLabel,
+  normalizeTransportName,
+} from '../data/transportRoutes';
 
 interface StudentFormProps {
   busStops: BusStop[];
@@ -53,6 +60,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   const [studentDocNum, setStudentDocNum] = useState<string>('');
   const [studentInstitution, setStudentInstitution] = useState<string>('');
   const [studentGrade, setStudentGrade] = useState<string>('');
+  const [studentVereda, setStudentVereda] = useState<string>('');
+  const [selectedDestination, setSelectedDestination] = useState<string>('');
   const [studentHasSisben, setStudentHasSisben] = useState<boolean>(false);
   const [studentSisbenLevel, setStudentSisbenLevel] = useState<string>('');
   const [studentSisbenMun, setStudentSisbenMun] = useState<string>('Nobsa');
@@ -69,6 +78,36 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   const [guardianEmail, setGuardianEmail] = useState<string>('');
   const [guardianPhone, setGuardianPhone] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  const veredas = getTransportVeredas();
+  const routeStopNames = studentVereda ? getTransportStopNames(studentVereda) : [];
+  const availableBusStops = routeStopNames.reduce<BusStop[]>((available, name) => {
+    const stop = busStops.find(
+      (busStop) => normalizeTransportName(name) === normalizeTransportName(busStop.name),
+    );
+    if (stop && !available.some(
+      (availableStop) => normalizeTransportName(availableStop.name) === normalizeTransportName(stop.name),
+    )) {
+      available.push(stop);
+    }
+    return available;
+  }, []);
+  const selectedStop = busStops.find((stop) => stop.id === busStopId);
+  const availableGrades = grades
+    .filter((grade) => gradeCodeFromLabel(grade) !== undefined)
+    .sort((a, b) => {
+      const sortCode = (grade: string) => {
+        const code = gradeCodeFromLabel(grade) ?? 0;
+        return code === -1 ? -2 : code === -2 ? -1 : code;
+      };
+      return sortCode(a) - sortCode(b);
+    });
+  const availableDestinations = getTransportDestinations(studentVereda, studentGrade);
+  const destination = availableDestinations.length === 1
+    ? availableDestinations[0]
+    : availableDestinations.includes(selectedDestination)
+      ? selectedDestination
+      : undefined;
 
   // Errors state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,8 +145,16 @@ export const StudentForm: React.FC<StudentFormProps> = ({
       errs.studentInstitution = 'Seleccione la institución educativa a la que pertenece.';
     }
 
+    if (!studentVereda) {
+      errs.studentVereda = 'Seleccione la vereda donde vive el estudiante.';
+    }
+
     if (!studentGrade) {
       errs.studentGrade = 'Seleccione el grado a cursar en la vigencia 2027.';
+    } else if (availableDestinations.length === 0) {
+      errs.studentGrade = 'El Excel no registra un destino para esta combinación de vereda y grado.';
+    } else if (!destination) {
+      errs.destination = 'Seleccione el destino de la ruta para continuar.';
     }
 
     if (studentHasSisben) {
@@ -198,8 +245,6 @@ export const StudentForm: React.FC<StudentFormProps> = ({
     setSubmitting(true);
     setServerError(null);
 
-    const selectedStop = busStops.find(b => b.id === busStopId);
-
     const payload = {
       status: 'CONTINUA',
       student: {
@@ -209,6 +254,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         documentNumber: studentDocNum.trim(),
         institution: studentInstitution,
         grade: studentGrade,
+        vereda: studentVereda,
+        destination,
         hasSisben: studentHasSisben,
         sisbenLevel: studentHasSisben ? studentSisbenLevel.trim() : undefined,
         sisbenMunicipality: studentHasSisben ? studentSisbenMun.trim() : undefined,
@@ -260,8 +307,6 @@ export const StudentForm: React.FC<StudentFormProps> = ({
     { num: 3, label: 'Acudiente & Contacto', icon: Users },
     { num: 4, label: 'Confirmación y Envío', icon: CheckCircle2 },
   ];
-
-  const selectedStop = busStops.find(b => b.id === busStopId);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -561,19 +606,94 @@ export const StudentForm: React.FC<StudentFormProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
-                    5. Grado escolar a cursar en 2027 <span className="text-red-500">*</span>
+                    5. Vereda donde vive el estudiante <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={studentVereda}
+                    onChange={(e) => {
+                      setStudentVereda(e.target.value);
+                      setBusStopId('');
+                      setStudentGrade('');
+                      setSelectedDestination('');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 ${
+                      errors.studentVereda ? 'border-red-400 ring-1 ring-red-400' : 'border-slate-300 focus:border-blue-600'
+                    }`}
+                  >
+                    <option value="">Seleccione la vereda...</option>
+                    {veredas.map((vereda) => (
+                      <option key={vereda} value={vereda}>
+                        {vereda}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.studentVereda && (
+                    <p className="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {errors.studentVereda}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Vereda-dependent route selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                    6. Paradero donde aborda el transporte <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={busStopId}
+                    disabled={!studentVereda}
+                    onChange={(e) => setBusStopId(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 ${
+                      errors.busStopId ? 'border-red-400 ring-1 ring-red-400' : 'border-slate-300 focus:border-blue-600'
+                    }`}
+                  >
+                    <option value="">
+                      {studentVereda ? 'Seleccione el paradero...' : 'Seleccione primero la vereda...'}
+                    </option>
+                    {availableBusStops.map((stop) => (
+                      <option key={stop.id} value={stop.id}>
+                        {stop.orderNumber}. {stop.name}
+                        {stop.operationalNote ? ` [${stop.operationalNote}]` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.busStopId && (
+                    <p className="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {errors.busStopId}
+                    </p>
+                  )}
+                  {studentVereda && availableBusStops.length === 0 && (
+                    <p className="text-xs text-amber-700 font-semibold mt-1">
+                      No hay paraderos activos registrados para esta vereda.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                    7. Grado escolar a cursar en 2027 <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={studentGrade}
-                    onChange={(e) => setStudentGrade(e.target.value)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 ${
+                    disabled={!busStopId}
+                    onChange={(e) => {
+                      setStudentGrade(e.target.value);
+                      setSelectedDestination('');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 ${
                       errors.studentGrade ? 'border-red-400 ring-1 ring-red-400' : 'border-slate-300 focus:border-blue-600'
                     }`}
                   >
-                    <option value="">Seleccione el grado...</option>
-                    {grades.map((gr) => (
-                      <option key={gr} value={gr}>
-                        {gr}
+                    <option value="">
+                      {busStopId ? 'Seleccione el grado...' : 'Seleccione primero el paradero...'}
+                    </option>
+                    {availableGrades.map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
                       </option>
                     ))}
                   </select>
@@ -583,8 +703,50 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                       {errors.studentGrade}
                     </p>
                   )}
+                  {busStopId && studentGrade && availableDestinations.length === 0 && (
+                    <p className="text-xs text-amber-700 font-semibold mt-1">
+                      El Excel no registra un destino para este grado en la vereda seleccionada.
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {availableDestinations.length > 1 && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                    Destino para el grado seleccionado <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={destination || ''}
+                    onChange={(e) => setSelectedDestination(e.target.value)}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 ${
+                      errors.destination ? 'border-red-400 ring-1 ring-red-400' : 'border-slate-300 focus:border-blue-600'
+                    }`}
+                  >
+                    <option value="">Seleccione el destino...</option>
+                    {availableDestinations.map((routeDestination) => (
+                      <option key={routeDestination} value={routeDestination}>
+                        {routeDestination}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.destination && (
+                    <p className="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {errors.destination}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {destination && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                    Destino asignado según la ruta 2027
+                  </p>
+                  <p className="mt-1 text-sm font-extrabold text-emerald-950">{destination}</p>
+                </div>
+              )}
 
               {/* SECCIÓN 3: SISBÉN DEL ESTUDIANTE */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
@@ -674,38 +836,6 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                 )}
               </div>
 
-              {/* SECCIÓN 4: SELECCIÓN DEL PARADERO */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
-                  Paradero donde el estudiante toma o abordará el transporte escolar <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={busStopId}
-                    onChange={(e) => setBusStopId(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all bg-white text-slate-800 appearance-none font-medium ${
-                      errors.busStopId ? 'border-red-400 ring-1 ring-red-400' : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100'
-                    }`}
-                  >
-                    <option value="">Seleccione el paradero oficial (44 paraderos disponibles)...</option>
-                    {busStops.map((stop) => (
-                      <option key={stop.id} value={stop.id}>
-                        {stop.orderNumber}. {stop.name} {stop.operationalNote ? `[${stop.operationalNote}]` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <MapPin className="w-5 h-5 text-blue-600 absolute right-3.5 top-3.5 pointer-events-none" />
-                </div>
-                {errors.busStopId && (
-                  <p className="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    {errors.busStopId}
-                  </p>
-                )}
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  Nota: Las opciones corresponden exactamente al censo de paraderos del municipio de Nobsa.
-                </p>
-              </div>
             </div>
           )}
 
@@ -1016,11 +1146,19 @@ export const StudentForm: React.FC<StudentFormProps> = ({
                       </dd>
                     </div>
                     <div className="pt-2 border-t border-blue-200/60">
+                      <dt className="text-blue-700 font-bold">Vereda:</dt>
+                      <dd className="font-semibold text-blue-950">{studentVereda}</dd>
+                    </div>
+                    <div>
                       <dt className="text-blue-700 font-bold">Paradero seleccionado:</dt>
                       <dd className="font-extrabold text-blue-950 text-sm flex items-center gap-1.5 mt-0.5">
                         <MapPin className="w-4 h-4 text-blue-700 flex-shrink-0" />
                         {selectedStop?.orderNumber}. {selectedStop?.name}
                       </dd>
+                    </div>
+                    <div>
+                      <dt className="text-emerald-800 font-bold">Destino de la ruta:</dt>
+                      <dd className="font-extrabold text-emerald-950">{destination}</dd>
                     </div>
                   </dl>
                 </div>

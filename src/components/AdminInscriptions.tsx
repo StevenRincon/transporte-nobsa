@@ -25,6 +25,7 @@ import {
 import { Inscription, EducationalInstitution, BusStop } from '../types';
 import { exportInscriptionsToExcel } from '../utils/excelExport';
 import { generateMasterReportPDF, generateInscriptionPDF } from '../utils/pdfGenerator';
+import { getTransportDestinations } from '../data/transportRoutes';
 
 interface AdminInscriptionsProps {
   token: string;
@@ -56,6 +57,12 @@ export const AdminInscriptions: React.FC<AdminInscriptionsProps> = ({
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+  const editRouteDestinations = editingInscription?.student?.vereda
+    ? getTransportDestinations(
+        editingInscription.student.vereda,
+        editingInscription.student.grade,
+      )
+    : [];
 
   // Fetch inscriptions
   const fetchInscriptions = async () => {
@@ -538,11 +545,23 @@ export const AdminInscriptions: React.FC<AdminInscriptionsProps> = ({
                   {/* Paradero card */}
                   <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200">
                     <span className="text-amber-800 font-bold block text-xs mb-1">
+                      Vereda:
+                    </span>
+                    <span className="font-black text-amber-950 text-sm">
+                      {viewingInscription.student?.vereda || 'No especificada'}
+                    </span>
+                    <span className="text-amber-800 font-bold block text-xs mb-1">
                       Paradero donde aborda el transporte escolar:
                     </span>
                     <span className="font-black text-amber-950 text-sm flex items-center gap-1.5">
                       <MapPin className="w-4 h-4 text-amber-700" />
                       {viewingInscription.student?.busStopName}
+                    </span>
+                    <span className="text-emerald-800 font-bold block text-xs mt-2 mb-1">
+                      Destino de la ruta:
+                    </span>
+                    <span className="font-black text-emerald-950 text-sm">
+                      {viewingInscription.student?.destination || 'No especificado'}
                     </span>
                   </div>
 
@@ -712,14 +731,55 @@ export const AdminInscriptions: React.FC<AdminInscriptionsProps> = ({
                   <input
                     type="text"
                     value={editingInscription.student?.grade || ''}
-                    onChange={(e) => setEditingInscription({
-                      ...editingInscription,
-                      student: { ...editingInscription.student!, grade: e.target.value }
-                    })}
+                    onChange={(e) => {
+                      const destinations = editingInscription.student?.vereda
+                        ? getTransportDestinations(editingInscription.student.vereda, e.target.value)
+                        : [];
+                      const selectedDestination = destinations.length === 1
+                        ? destinations[0]
+                        : destinations.includes(editingInscription.student?.destination || '')
+                          ? editingInscription.student?.destination
+                          : '';
+                      setEditingInscription({
+                        ...editingInscription,
+                        student: {
+                          ...editingInscription.student!,
+                          grade: e.target.value,
+                          destination: selectedDestination,
+                        }
+                      });
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
                   />
                 </div>
               </div>
+
+              {editingInscription.student?.vereda && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">Destino de la ruta</label>
+                  {editRouteDestinations.length > 1 ? (
+                    <select
+                      value={editRouteDestinations.includes(editingInscription.student.destination || '')
+                        ? editingInscription.student.destination
+                        : ''}
+                      onChange={(e) => setEditingInscription({
+                        ...editingInscription,
+                        student: { ...editingInscription.student!, destination: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                    >
+                      <option value="">Seleccione el destino...</option>
+                      {editRouteDestinations.map((destination) => (
+                        <option key={destination} value={destination}>{destination}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
+                      {editRouteDestinations[0] || 'Sin destino definido para este grado'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Paradero Selection */}
               <div>

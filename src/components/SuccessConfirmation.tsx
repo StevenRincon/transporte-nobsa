@@ -148,11 +148,21 @@ export const SuccessConfirmation: React.FC<SuccessConfirmationProps> = ({
 
               <div className="sm:col-span-2 bg-blue-50/80 p-3.5 rounded-xl border border-blue-200">
                 <span className="text-blue-700 font-bold block mb-0.5">
+                  Vereda:
+                </span>
+                <span className="font-extrabold text-blue-950 text-sm">{student?.vereda}</span>
+                <span className="text-blue-700 font-bold block mt-2 mb-0.5">
                   Paradero seleccionado donde aborda el transporte:
                 </span>
                 <span className="font-extrabold text-blue-950 text-sm sm:text-base flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-blue-700 flex-shrink-0" />
                   {student?.busStopName}
+                </span>
+                <span className="text-emerald-800 font-bold block mt-2 mb-0.5">
+                  Destino de la ruta:
+                </span>
+                <span className="font-extrabold text-emerald-950 text-sm sm:text-base">
+                  {student?.destination}
                 </span>
               </div>
 

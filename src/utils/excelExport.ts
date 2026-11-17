@@ -13,6 +13,8 @@ export function exportInscriptionsToExcel(inscriptions: Inscription[], filenameP
         'Número Documento Estudiante': insc.declinationDetails?.documentNumber || 'No especificado',
         'Institución Educativa': insc.declinationDetails?.school || 'N/A',
         'Grado': 'N/A',
+        'Vereda': 'N/A',
+        'Destino': 'N/A',
         'Tiene SISBÉN Estudiante': 'N/A',
         'Nivel SISBÉN Estudiante': 'N/A',
         'Municipio SISBÉN Estudiante': 'N/A',
@@ -42,6 +44,8 @@ export function exportInscriptionsToExcel(inscriptions: Inscription[], filenameP
       'Número Documento Estudiante': st?.documentNumber || '',
       'Institución Educativa': st?.institution || '',
       'Grado': st?.grade || '',
+      'Vereda': st?.vereda || '',
+      'Destino': st?.destination || '',
       'Tiene SISBÉN Estudiante': st?.hasSisben ? 'SÍ' : 'NO',
       'Nivel SISBÉN Estudiante': st?.sisbenLevel || '',
       'Municipio SISBÉN Estudiante': st?.sisbenMunicipality || '',
@@ -72,6 +76,8 @@ export function exportInscriptionsToExcel(inscriptions: Inscription[], filenameP
     { wch: 18 }, // Doc num
     { wch: 38 }, // Institución
     { wch: 22 }, // Grado
+    { wch: 30 }, // Vereda
+    { wch: 32 }, // Destino
     { wch: 12 }, // Sisben?
     { wch: 14 }, // Nivel Sisben
     { wch: 18 }, // Mun Sisben
