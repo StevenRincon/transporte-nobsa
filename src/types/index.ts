@@ -14,7 +14,6 @@ export interface Student {
   institution: string;
   grade: string;
   vereda?: string;
-  destination?: string;
   hasSisben: boolean;
   sisbenLevel?: string;
   sisbenMunicipality?: string;

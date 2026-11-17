@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Inscription } from '../types';
+import { getTransportDestinations } from '../data/transportRoutes';
 
 export function exportInscriptionsToExcel(inscriptions: Inscription[], filenamePrefix = 'Inscripciones_Transporte_Nobsa_2027') {
   const data = inscriptions.map((insc, index) => {
@@ -45,7 +46,11 @@ export function exportInscriptionsToExcel(inscriptions: Inscription[], filenameP
       'Institución Educativa': st?.institution || '',
       'Grado': st?.grade || '',
       'Vereda': st?.vereda || '',
-      'Destino': st?.destination || '',
+      'Destino': st?.vereda
+        ? (getTransportDestinations(st.vereda, st.grade).length === 1
+            ? getTransportDestinations(st.vereda, st.grade)[0]
+            : 'Selección registrada por el acudiente')
+        : '',
       'Tiene SISBÉN Estudiante': st?.hasSisben ? 'SÍ' : 'NO',
       'Nivel SISBÉN Estudiante': st?.sisbenLevel || '',
       'Municipio SISBÉN Estudiante': st?.sisbenMunicipality || '',

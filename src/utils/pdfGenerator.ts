@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Inscription } from '../types';
+import { getTransportDestinations } from '../data/transportRoutes';
 
 export function generateInscriptionPDF(inscription: Inscription) {
   const doc = new jsPDF({
@@ -12,6 +13,12 @@ export function generateInscriptionPDF(inscription: Inscription) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const student = inscription.student;
   const guardian = inscription.guardian;
+  const calculatedDestinations = student?.vereda
+    ? getTransportDestinations(student.vereda, student.grade)
+    : [];
+  const calculatedDestination = calculatedDestinations.length === 1
+    ? calculatedDestinations[0]
+    : 'Selección registrada por el acudiente';
 
   // Header Background Institutional Banner
   doc.setFillColor(2, 71, 148); // #024794 Nobsa Blue
@@ -90,7 +97,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
       ['Vereda:', student?.vereda || 'N/A'],
       ['Clasificación SISBÉN:', student?.hasSisben ? `SÍ (Nivel: ${student.sisbenLevel || 'N/A'} - Municipio: ${student.sisbenMunicipality || 'N/A'})` : 'NO'],
       ['Paradero de Transporte Asignado:', student?.busStopName || 'N/A'],
-      ['Destino de la Ruta:', student?.destination || 'N/A'],
+      ['Destino de la Ruta:', calculatedDestination],
     ],
     theme: 'grid',
     headStyles: { fillColor: [2, 71, 148], textColor: 255, fontStyle: 'bold', fontSize: 9 },

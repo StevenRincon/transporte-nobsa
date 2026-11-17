@@ -1,5 +1,5 @@
 {
-  "nextSequentialId": 107,
+  "nextSequentialId": 108,
   "busStops": [
     {
       "id": "stop-1",
@@ -390,8 +390,18 @@
       "createdAt": "2026-11-01T08:30:00.000Z"
     }
   ],
-
+  "inscriptions": [],
   "auditLogs": [
+    {
+      "id": "log-1794942034537-337",
+      "userName": "Portal Ciudadano",
+      "userId": "portal-publico",
+      "action": "NUEVA_INSCRIPCION",
+      "recordType": "INSCRIPCION",
+      "recordId": "NOBSA-2027-TRP-00107",
+      "details": "Inscripción registrada para el estudiante Prueba Sin Destino (NODESTINO-1794942034403) en paradero 3 Esquinas.",
+      "timestamp": "2026-11-17T19:00:34.537Z"
+    },
     {
       "id": "log-1794405822234-343",
       "userName": "Portal Ciudadano",

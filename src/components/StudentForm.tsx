@@ -255,7 +255,6 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         institution: studentInstitution,
         grade: studentGrade,
         vereda: studentVereda,
-        destination,
         hasSisben: studentHasSisben,
         sisbenLevel: studentHasSisben ? studentSisbenLevel.trim() : undefined,
         sisbenMunicipality: studentHasSisben ? studentSisbenMun.trim() : undefined,

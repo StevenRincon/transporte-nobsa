@@ -17,6 +17,7 @@ import confetti from 'canvas-confetti';
 import { Inscription } from '../types';
 import { generateInscriptionPDF } from '../utils/pdfGenerator';
 import { NobsaLogo } from './NobsaLogo';
+import { getTransportDestinations } from '../data/transportRoutes';
 
 interface SuccessConfirmationProps {
   inscription: Inscription;
@@ -29,6 +30,12 @@ export const SuccessConfirmation: React.FC<SuccessConfirmationProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const student = inscription.student;
+  const calculatedDestinations = student?.vereda
+    ? getTransportDestinations(student.vereda, student.grade)
+    : [];
+  const calculatedDestination = calculatedDestinations.length === 1
+    ? calculatedDestinations[0]
+    : 'Seleccione el destino según la ruta';
   const guardian = inscription.guardian;
 
   useEffect(() => {
@@ -162,7 +169,7 @@ export const SuccessConfirmation: React.FC<SuccessConfirmationProps> = ({
                   Destino de la ruta:
                 </span>
                 <span className="font-extrabold text-emerald-950 text-sm sm:text-base">
-                  {student?.destination}
+                  {calculatedDestination}
                 </span>
               </div>
 

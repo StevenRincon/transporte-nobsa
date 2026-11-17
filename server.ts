@@ -8,7 +8,7 @@ import {
   getTransportDestinations,
   getTransportStopNames,
   normalizeTransportName,
-} from './src/data/transportRoutes';
+} from './src/data/transportRoutes.js';
 
 import 'dotenv/config';
 
@@ -377,7 +377,14 @@ function normalizeDatabase(parsed: unknown): DbSchema {
     institutions: Array.isArray(data.institutions) ? data.institutions : structuredClone(defaults.institutions),
     grades: [...new Set([...defaults.grades, ...(Array.isArray(data.grades) ? data.grades : [])])],
     users: Array.isArray(data.users) ? data.users : structuredClone(defaults.users),
-    inscriptions: Array.isArray(data.inscriptions) ? data.inscriptions : [],
+    inscriptions: Array.isArray(data.inscriptions)
+      ? data.inscriptions.map((inscription: any) => {
+          if (inscription?.student) {
+            delete inscription.student.destination;
+          }
+          return inscription;
+        })
+      : [],
     auditLogs: Array.isArray(data.auditLogs) ? data.auditLogs : structuredClone(defaults.auditLogs)
   };
 }
@@ -738,7 +745,6 @@ app.post('/api/inscriptions', asyncHandler(async (req, res) => {
       institution,
       grade,
       vereda,
-      destination,
       hasSisben: !!student.hasSisben,
       sisbenLevel: student.hasSisben ? student.sisbenLevel?.trim() : undefined,
       sisbenMunicipality: student.hasSisben ? student.sisbenMunicipality?.trim() : undefined,
@@ -1009,8 +1015,8 @@ app.put('/api/admin/inscriptions/:id', authenticateToken, asyncHandler(async (re
       sisbenMunicipality: student.sisbenMunicipality,
       busStopId: updatedStopId,
       busStopName: updatedStop?.name || student.busStopName || existing.student?.busStopName,
-      destination: updatedDestination,
     };
+    delete (existing.student as any).destination;
   }
 
   if (guardian) {
