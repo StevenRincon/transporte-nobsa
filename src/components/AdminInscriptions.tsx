@@ -73,6 +73,10 @@ export const AdminInscriptions: React.FC<AdminInscriptionsProps> = ({
       const res = await fetch(`/api/admin/inscriptions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401 || res.status === 403) {
+        window.dispatchEvent(new Event('nobsa-auth-expired'));
+        throw new Error('La sesión administrativa expiró. Inicie sesión nuevamente.');
+      }
       if (!res.ok) throw new Error('Error al cargar inscripciones');
       const data = await res.json();
       setInscriptions(data.inscriptions);

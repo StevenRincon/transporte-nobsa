@@ -4,11 +4,6 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MongoClient, type Collection } from 'mongodb';
-import {
-  getTransportDestinations,
-  getTransportStopNames,
-  normalizeTransportName,
-} from './src/data/transportRoutes.js';
 
 import 'dotenv/config';
 
@@ -649,24 +644,6 @@ app.post('/api/inscriptions', asyncHandler(async (req, res) => {
   if (!vereda) {
     return res.status(400).json({ error: 'Debe seleccionar la vereda del estudiante.' });
   }
-  const routeStops = getTransportStopNames(vereda);
-  if (!routeStops.some((name) => normalizeTransportName(name) === normalizeTransportName(selectedStop.name))) {
-    return res.status(400).json({ error: 'El paradero seleccionado no corresponde a la vereda indicada.' });
-  }
-  const destinations = getTransportDestinations(vereda, grade);
-  const requestedDestination = (student.destination || '').trim();
-  const destination = destinations.length === 1
-    ? destinations[0]
-    : destinations.includes(requestedDestination)
-      ? requestedDestination
-      : undefined;
-  if (!destination) {
-    return res.status(400).json({
-      error: destinations.length > 1
-        ? 'Debe seleccionar un destino válido para la vereda y el grado.'
-        : 'No existe un destino registrado para la vereda y el grado seleccionados.',
-    });
-  }
 
   // Guardian validation
   if (!guardian) {
@@ -972,33 +949,6 @@ app.put('/api/admin/inscriptions/:id', authenticateToken, asyncHandler(async (re
   const updatedStop = db.busStops.find((stop: any) => stop.id === updatedStopId);
   const updatedGrade = student?.grade || existing.student?.grade;
   const updatedVereda = student?.vereda || existing.student?.vereda;
-  const updatedDestinations = updatedVereda
-    ? getTransportDestinations(updatedVereda, updatedGrade || '')
-    : [];
-  const requestedDestination = (student?.destination || '').trim();
-  const updatedDestination = updatedDestinations.length === 1
-    ? updatedDestinations[0]
-    : updatedDestinations.includes(requestedDestination)
-      ? requestedDestination
-      : updatedDestinations.includes(existing.student?.destination || '')
-        ? existing.student?.destination
-        : undefined;
-
-  if (updatedVereda && !updatedDestination) {
-    return res.status(400).json({
-      error: updatedDestinations.length > 1
-        ? 'Seleccione un destino válido para la vereda y el grado.'
-        : 'No existe un destino registrado para la vereda y el grado seleccionados.',
-    });
-  }
-
-  if (updatedVereda && updatedStop && !getTransportStopNames(updatedVereda).some(
-    (name) => normalizeTransportName(name) === normalizeTransportName(updatedStop.name),
-  )) {
-    return res.status(400).json({
-      error: 'El paradero seleccionado no corresponde a la vereda indicada.',
-    });
-  }
 
   if (student) {
     existing.student = {

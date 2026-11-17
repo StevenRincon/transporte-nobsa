@@ -37,6 +37,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const res = await fetch('/api/admin/dashboard', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401 || res.status === 403) {
+        window.dispatchEvent(new Event('nobsa-auth-expired'));
+        throw new Error('La sesión administrativa expiró. Inicie sesión nuevamente.');
+      }
       if (!res.ok) throw new Error('Error al cargar estadísticas.');
       const data = await res.json();
       setStats(data);

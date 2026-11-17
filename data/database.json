@@ -1,5 +1,5 @@
 {
-  "nextSequentialId": 108,
+  "nextSequentialId": 107,
   "busStops": [
     {
       "id": "stop-1",
@@ -392,6 +392,26 @@
   ],
   "inscriptions": [],
   "auditLogs": [
+    {
+      "id": "log-1794942516103-184",
+      "userName": "Portal Ciudadano",
+      "userId": "portal-publico",
+      "action": "NUEVA_INSCRIPCION",
+      "recordType": "INSCRIPCION",
+      "recordId": "NOBSA-2027-TRP-00107",
+      "details": "Inscripción registrada para el estudiante Prueba Base Datos (BDTEST-1794942516079) en paradero 3 Esquinas.",
+      "timestamp": "2026-11-17T19:08:36.103Z"
+    },
+    {
+      "id": "log-1794942516052-195",
+      "userName": "Ing. Hans Sebastian Barragan (Jefe Oficina de las TIC)",
+      "userId": "usr-1",
+      "action": "INICIO_SESION",
+      "recordType": "USUARIO",
+      "recordId": "usr-1",
+      "details": "Inicio de sesión exitoso del usuario admin_nobsa (ADMIN).",
+      "timestamp": "2026-11-17T19:08:36.052Z"
+    },
     {
       "id": "log-1794942034537-337",
       "userName": "Portal Ciudadano",

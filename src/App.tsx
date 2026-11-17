@@ -138,13 +138,47 @@ export default function App() {
     const userStr = localStorage.getItem("nobsa_admin_user");
     if (token && userStr) {
       try {
-        setAdminToken(token);
-        setAdminUser(JSON.parse(userStr));
+        const storedUser = JSON.parse(userStr);
+        fetch("/api/admin/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(async (res) => {
+          if (!res.ok) {
+            localStorage.removeItem("nobsa_admin_token");
+            localStorage.removeItem("nobsa_admin_user");
+            setAdminToken(null);
+            setAdminUser(null);
+            setCurrentView("citizen");
+            return;
+          }
+          const data = await res.json();
+          setAdminToken(token);
+          setAdminUser(data.user || storedUser);
+        }).catch(() => {
+          localStorage.removeItem("nobsa_admin_token");
+          localStorage.removeItem("nobsa_admin_user");
+          setAdminToken(null);
+          setAdminUser(null);
+          setCurrentView("citizen");
+        });
       } catch (e) {
         localStorage.removeItem("nobsa_admin_token");
         localStorage.removeItem("nobsa_admin_user");
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      localStorage.removeItem("nobsa_admin_token");
+      localStorage.removeItem("nobsa_admin_user");
+      setAdminToken(null);
+      setAdminUser(null);
+      setCurrentView("citizen");
+      setCitizenStep("initial-question");
+    };
+
+    window.addEventListener("nobsa-auth-expired", handleExpiredSession);
+    return () => window.removeEventListener("nobsa-auth-expired", handleExpiredSession);
   }, []);
 
   // Admin Auth Handlers
