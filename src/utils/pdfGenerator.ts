@@ -121,7 +121,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
     ],
     theme: 'grid',
     headStyles: { fillColor: [185, 28, 28], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8.5, textColor: [31, 31, 31] },
+    bodyStyles: { fontSize: 7.5, textColor: [31, 31, 31], minCellHeight: 5 },
     alternateRowStyles: { fillColor: [243, 244, 246] },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
     margin: { left: 14, right: 14 },
@@ -148,7 +148,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
     ],
     theme: 'grid',
     headStyles: { fillColor: [31, 31, 31], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8.5, textColor: [31, 31, 31] },
+    bodyStyles: { fontSize: 7.5, textColor: [31, 31, 31], minCellHeight: 5 },
     alternateRowStyles: { fillColor: [243, 244, 246] },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
     margin: { left: 14, right: 14 },
@@ -160,7 +160,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
   // Legal and Habeas Data statement box
   doc.setFillColor(243, 244, 246);
   doc.setDrawColor(185, 28, 28);
-  doc.roundedRect(14, currentY, pageWidth - 28, 28, 2, 2, 'FD');
+  doc.roundedRect(14, currentY, pageWidth - 28, 22, 2, 2, 'FD');
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
@@ -170,26 +170,28 @@ export function generateInscriptionPDF(inscription: Inscription) {
   doc.setTextColor(100, 116, 139);
   const legalText = "El acudiente autorizó a la Alcaldía Municipal de Nobsa para recolectar y tratar los datos suministrados con el fin de identificar a los estudiantes interesados en continuar con el servicio de transporte escolar 2027, garantizando confidencialidad y reserva conforme a la ley. Este documento es un comprobante formal de radicación de solicitud de continuidad.";
   const splitLegal = doc.splitTextToSize(legalText, pageWidth - 36);
-  doc.text(splitLegal, 18, currentY + 12);
+  doc.text(splitLegal, 18, currentY + 11);
 
   // Digital Signatures / Seals Box
-  currentY += 34;
+  const signatureY = 238;
 
   doc.setDrawColor(148, 163, 184);
-  doc.line(24, currentY + 18, 90, currentY + 18);
-  doc.line(pageWidth - 90, currentY + 18, pageWidth - 24, currentY + 18);
+  doc.line(24, signatureY + 18, 90, signatureY + 18);
+  doc.line(pageWidth - 90, signatureY + 18, pageWidth - 24, signatureY + 18);
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 41, 59);
-  doc.text('SECRETARÍA DE LA MUJER Y PROGRAMAS SOCIALES', 57, currentY + 23, { align: 'center' });
-  doc.text('FIRMA DEL ACUDIENTE', pageWidth - 57, currentY + 23, { align: 'center' });
+  doc.text('SECRETARÍA DE LA MUJER Y PROGRAMAS SOCIALES', 57, signatureY + 23, { align: 'center' });
+  doc.text('FIRMA DEL ACUDIENTE', pageWidth - 57, signatureY + 23, { align: 'center' });
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text('Alcaldía Municipal de Nobsa', 57, currentY + 27, { align: 'center' });
-  doc.text(`C.C. ${guardian?.documentNumber || '________________'}`, pageWidth - 57, currentY + 27, { align: 'center' });
+  doc.text('Alcaldía Municipal de Nobsa', 57, signatureY + 27, { align: 'center' });
+  const guardianName = doc.splitTextToSize(guardian?.fullName || 'Acudiente', 66);
+  doc.text(guardianName, pageWidth - 57, signatureY + 27, { align: 'center' });
+  doc.text(`C.C. ${guardian?.documentNumber || '________________'}`, pageWidth - 57, signatureY + 31, { align: 'center' });
 
   // Footer bar
   doc.setFillColor(31, 31, 31);
