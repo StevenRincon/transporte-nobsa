@@ -21,13 +21,13 @@ export function generateInscriptionPDF(inscription: Inscription) {
     : 'Selección registrada por el acudiente';
 
   // Header Background Institutional Banner
-  doc.setFillColor(2, 71, 148); // #024794 Nobsa Blue
+  doc.setFillColor(185, 28, 28); // Rojo institucional
   doc.rect(0, 0, pageWidth, 28, 'F');
 
-  // Colombian Accent Bar (Yellow, Blue, Red)
-  doc.setFillColor(251, 191, 36); // Yellow
+  // Institutional Accent Bars
+  doc.setFillColor(31, 31, 31); // Negro institucional
   doc.rect(0, 28, pageWidth, 2, 'F');
-  doc.setFillColor(5, 150, 105); // Boyacá Green
+  doc.setFillColor(229, 231, 235); // Gris institucional
   doc.rect(0, 30, pageWidth, 1.5, 'F');
 
   // Header Texts
@@ -55,7 +55,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(2, 71, 148);
+  doc.setTextColor(185, 28, 28);
   doc.text('CÓDIGO DE INSCRIPCIÓN:', 20, 54);
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
@@ -63,7 +63,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(2, 71, 148);
+  doc.setTextColor(185, 28, 28);
   doc.text('FECHA Y HORA DE REGISTRO:', pageWidth - 80, 54);
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
@@ -77,12 +77,32 @@ export function generateInscriptionPDF(inscription: Inscription) {
   });
   doc.text(formattedDate, pageWidth - 80, 60);
 
-  let currentY = 72;
+  let currentY = 70;
+
+  doc.setFillColor(254, 242, 242);
+  doc.setDrawColor(185, 28, 28);
+  doc.roundedRect(14, currentY, pageWidth - 28, 18, 2, 2, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(185, 28, 28);
+  doc.text('DEBE IMPRIMIR ESTE DOCUMENTO', pageWidth / 2, currentY + 6, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(31, 31, 31);
+  doc.text(
+    'Radíquelo en la oficina de la Secretaría de la Mujer y Programas Sociales,',
+    pageWidth / 2,
+    currentY + 12,
+    { align: 'center' },
+  );
+  doc.text('frente al cementerio del municipio de Nobsa.', pageWidth / 2, currentY + 16, { align: 'center' });
+
+  currentY += 23;
 
   // Student Section Table
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(2, 71, 148);
+  doc.setTextColor(31, 31, 31);
   doc.text('1. INFORMACIÓN DEL ESTUDIANTE', 14, currentY);
 
   autoTable(doc, {
@@ -100,8 +120,9 @@ export function generateInscriptionPDF(inscription: Inscription) {
       ['Destino de la Ruta:', calculatedDestination],
     ],
     theme: 'grid',
-    headStyles: { fillColor: [2, 71, 148], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+    headStyles: { fillColor: [185, 28, 28], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5, textColor: [31, 31, 31] },
+    alternateRowStyles: { fillColor: [243, 244, 246] },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
     margin: { left: 14, right: 14 },
   });
@@ -112,7 +133,7 @@ export function generateInscriptionPDF(inscription: Inscription) {
   // Guardian Section Table
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(2, 71, 148);
+  doc.setTextColor(31, 31, 31);
   doc.text('2. INFORMACIÓN DEL ACUDIENTE / RESPONSABLE', 14, currentY);
 
   autoTable(doc, {
@@ -126,8 +147,9 @@ export function generateInscriptionPDF(inscription: Inscription) {
       ['Correo Electrónico:', guardian?.email || 'N/A'],
     ],
     theme: 'grid',
-    headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8.5, textColor: [30, 41, 59] },
+    headStyles: { fillColor: [31, 31, 31], textColor: 255, fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8.5, textColor: [31, 31, 31] },
+    alternateRowStyles: { fillColor: [243, 244, 246] },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
     margin: { left: 14, right: 14 },
   });
@@ -136,8 +158,8 @@ export function generateInscriptionPDF(inscription: Inscription) {
   currentY = doc.lastAutoTable.finalY + 10;
 
   // Legal and Habeas Data statement box
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(243, 244, 246);
+  doc.setDrawColor(185, 28, 28);
   doc.roundedRect(14, currentY, pageWidth - 28, 28, 2, 2, 'FD');
 
   doc.setFontSize(7.5);
@@ -170,11 +192,11 @@ export function generateInscriptionPDF(inscription: Inscription) {
   doc.text(`C.C. ${guardian?.documentNumber || '________________'}`, pageWidth - 57, currentY + 27, { align: 'center' });
 
   // Footer bar
-  doc.setFillColor(2, 71, 148);
+  doc.setFillColor(31, 31, 31);
   doc.rect(0, 285, pageWidth, 12, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(7.5);
-  doc.text('Palacio Municipal de Nobsa – Carrera 5 No. 5-30, Parque Principal · Cel: (57) 310 000 0000 · contacto@nobsa-boyaca.gov.co', pageWidth / 2, 292, { align: 'center' });
+  doc.text('Palacio Municipal de Nobsa - Parque Principal · gestionsocial@nobsa-boyaca.gov.co', pageWidth / 2, 292, { align: 'center' });
 
   // Save the PDF
   const filename = `Comprobante_Transporte_2027_${student?.documentNumber || 'Nobsa'}.pdf`;
@@ -191,7 +213,7 @@ export function generateMasterReportPDF(inscriptions: Inscription[], filterDescr
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header
-  doc.setFillColor(2, 71, 148);
+  doc.setFillColor(185, 28, 28);
   doc.rect(0, 0, pageWidth, 22, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
@@ -236,8 +258,9 @@ export function generateMasterReportPDF(inscriptions: Inscription[], filterDescr
     head: [['#', 'Código', 'Estudiante', 'Doc. Identidad', 'Institución', 'Grado', 'Paradero', 'Acudiente', 'Teléfono', 'Fecha']],
     body: rows,
     theme: 'grid',
-    headStyles: { fillColor: [2, 71, 148], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-    bodyStyles: { fontSize: 7, textColor: [30, 41, 59] },
+    headStyles: { fillColor: [31, 31, 31], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+    bodyStyles: { fontSize: 7, textColor: [31, 31, 31] },
+    alternateRowStyles: { fillColor: [243, 244, 246] },
     columnStyles: {
       0: { cellWidth: 8 },
       1: { cellWidth: 26 },

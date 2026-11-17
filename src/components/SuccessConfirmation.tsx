@@ -11,7 +11,8 @@ import {
   PlusCircle, 
   FileText,
   ShieldCheck,
-  Share2
+  Share2,
+  Printer,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Inscription } from '../types';
@@ -45,7 +46,7 @@ export const SuccessConfirmation: React.FC<SuccessConfirmationProps> = ({
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#024794', '#059669', '#fbbf24', '#ffffff'],
+        colors: ['#B91C2C', '#1F1F1F', '#E5E7EB', '#FFFFFF'],
       });
     } catch (e) {
       // Ignore if canvas is unavailable
@@ -188,6 +189,20 @@ export const SuccessConfirmation: React.FC<SuccessConfirmationProps> = ({
                 <span>Fecha y hora oficial de radicación: {formattedDate}</span>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-2xl border-2 border-red-700 bg-red-50 p-5 text-center">
+            <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-white">
+              <Printer className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-black text-red-800">
+              Debe imprimir este documento
+            </h3>
+            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-800">
+              Imprima el comprobante y radíquelo obligatoriamente en la
+              <strong> oficina de la Secretaría de la Mujer y Programas Sociales</strong>,
+              frente al cementerio del municipio de Nobsa.
+            </p>
           </div>
 
           {/* Action Buttons */}

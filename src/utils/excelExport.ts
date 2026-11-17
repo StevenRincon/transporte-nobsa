@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { Inscription } from '../types';
 import { getTransportDestinations } from '../data/transportRoutes';
 
@@ -70,6 +70,55 @@ export function exportInscriptionsToExcel(inscriptions: Inscription[], filenameP
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
+
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  const institutionalRed = 'B91C2C';
+  const institutionalDark = '1F1F1F';
+  const institutionalGray = 'E5E7EB';
+  const institutionalLightGray = 'F3F4F6';
+  const white = 'FFFFFF';
+
+  for (let row = range.s.r; row <= range.e.r; row += 1) {
+    for (let col = range.s.c; col <= range.e.c; col += 1) {
+      const address = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!worksheet[address]) continue;
+
+      worksheet[address].s = row === 0
+        ? {
+            fill: { patternType: 'solid', fgColor: { rgb: institutionalRed } },
+            font: { bold: true, color: { rgb: white }, sz: 11 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: {
+              top: { style: 'thin', color: { rgb: institutionalDark } },
+              bottom: { style: 'thin', color: { rgb: institutionalDark } },
+              left: { style: 'thin', color: { rgb: institutionalDark } },
+              right: { style: 'thin', color: { rgb: institutionalDark } },
+            },
+          }
+        : {
+            fill: {
+              patternType: 'solid',
+              fgColor: { rgb: row % 2 === 0 ? institutionalLightGray : white },
+            },
+            font: {
+              bold: col === 0 || col === 1 || col === 2,
+              color: { rgb: institutionalDark },
+              sz: 10,
+            },
+            alignment: { vertical: 'top', wrapText: true },
+            border: {
+              top: { style: 'hair', color: { rgb: institutionalGray } },
+              bottom: { style: 'hair', color: { rgb: institutionalGray } },
+              left: { style: 'hair', color: { rgb: institutionalGray } },
+              right: { style: 'hair', color: { rgb: institutionalGray } },
+            },
+          };
+    }
+  }
+
+  worksheet['!autofilter'] = { ref: worksheet['!ref'] || 'A1:X1' };
+  worksheet['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+  worksheet['!rows'] = [{ hpt: 32, hpx: 32 }];
 
   // Set column widths for readability
   worksheet['!cols'] = [
